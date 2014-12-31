@@ -1,7 +1,9 @@
-Rust-IOCP [![Build Status](https://travis-ci.org/cyderize/rust-websocket.svg?branch=master)](https://travis-ci.org/cyderize/rust-websocket)
+Rust-IOCP
 ==============
 
 Rust-IOCP is a Windows Input/Ouput control port library written in Rust.
+
+The crate only compiles in Windows - in other operating systems the crate is simply empty.
 
 ## Installation
 
