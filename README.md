@@ -1,16 +1,26 @@
 Rust-IOCP
 ==============
 
-Rust-IOCP is a Windows Input/Ouput control port library written in Rust.
+Rust-IOCP is a Windows Input/Ouput completion port (IOCP) library written in Rust.
 
 The crate only compiles in Windows - in other operating systems the crate is simply empty.
 
 ## Installation
 
+From the git repository:
+
 ```INI
 [dependencies.iocp]
 
 git = "https://github.com/cyderize/rust-iocp.git"
+```
+
+From crates.io:
+
+```INI
+[dependencies]
+
+iocp = "0.0.2"
 ```
 
 And add ```extern crate iocp;``` to your project.
