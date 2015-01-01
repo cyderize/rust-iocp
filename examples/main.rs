@@ -2,6 +2,7 @@ extern crate iocp;
 extern crate libc;
 
 use iocp::{IoCompletionPort, CompletionStatus};
+use std::{ptr, mem};
 use std::sync::TaskPool;
 use std::os::num_cpus;
 use std::io::timer::sleep;
@@ -18,21 +19,37 @@ fn main() {
 		let iocp_clone = iocp.clone();
 		taskpool.execute(move || {
 			loop {
+				sleep(Duration::milliseconds(100 * i as i64));
 				let status = iocp_clone.get_queued(libc::INFINITE).unwrap();
-				println!("Dequeued: {} from {}", status.completion_key, i);
-				sleep(Duration::milliseconds(1100));
+				println!("Dequeued: {} from {} with {} {}", status.completion_key, i, status.byte_count, status.overlapped);
+				let overlapped: Box<libc::OVERLAPPED> = unsafe { mem::transmute(status.overlapped) };
+				let internal: Box<u32> = unsafe { mem::transmute(overlapped.Internal) };
+				let internal_high: Box<u32> = unsafe { mem::transmute(overlapped.InternalHigh) };
+				
+				println!("Overlapped: {} {} {} {} {}", internal, internal_high, overlapped.Offset, overlapped.OffsetHigh, overlapped.hEvent);
+				
+				sleep(Duration::milliseconds(500));
 			}
 		});
 	}
 	
 	loop {
+		let internal = box 3u32;
+		let internal_high = box 4u32;
+		let overlapped = box libc::OVERLAPPED {
+			Internal: unsafe { mem::transmute(internal) },
+			InternalHigh: unsafe { mem::transmute(internal_high) },
+			Offset: 200,
+			OffsetHigh: 300,
+			hEvent: ptr::null_mut()
+		};
 		let status = CompletionStatus {
 			byte_count: 100,
 			completion_key: random(),
-			overlapped: None
+			overlapped: unsafe { mem::transmute(overlapped) }
 		};
-		iocp.post_queued(status).unwrap();
 		println!("Queued: {}", status.completion_key);
-		sleep(Duration::seconds(1));
+		iocp.post_queued(status).unwrap();
+		sleep(Duration::milliseconds(100));
 	}
 }

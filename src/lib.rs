@@ -1,6 +1,7 @@
 //! Provides an I/O completion port for asynchronous operations.
 //!
 //! This crate is only available on Windows.
+//!
 #![cfg(target_os = "windows")]
 
 extern crate libc;
@@ -8,6 +9,8 @@ extern crate libc;
 use std::{os, ptr, mem};
 use std::result::Result;
 use std::sync::Arc;
+use std::rt::heap;
+use std::slice;
 
 mod ffi;
 
@@ -19,7 +22,7 @@ pub struct IoCompletionPort {
 unsafe impl Sync for IoCompletionPort { }
 unsafe impl Send for IoCompletionPort { }
 
-impl IoCompletionPort {
+impl<'a> IoCompletionPort {
 	/// Create a new IoCompletionPort with the specified number of concurrent threads.
 	///
 	/// If zero threads are specified, the system allows as many concurrently running
@@ -54,39 +57,58 @@ impl IoCompletionPort {
 	pub fn get_queued(&self, timeout: u32) -> Result<CompletionStatus, String> {
 		let mut length: ffi::DWORD = 0;
 		let mut key: ffi::ULONG_PTR = 0;
-		let mut overlapped = unsafe { mem::zeroed() };
-		
+		let mut overlapped = ptr::null_mut();
+
 		let queued = unsafe { ffi::GetQueuedCompletionStatus(self.inner, &mut length, &mut key, &mut overlapped, timeout) };
 		
-		if queued == 0 {
+		if queued == 0 { 
 			return Err(os::last_os_error());
 		}
-		
-		let overlapped_option = 
-			if overlapped == ptr::null_mut() {
-				None
-			}
-			else {
-				Some(unsafe { *overlapped })
-			};
 		
 		Ok(CompletionStatus {
 			byte_count: length as uint,
 			completion_key: key as uint,
-			overlapped: overlapped_option
+			overlapped: overlapped
 		})
 	}
+	/// Attempts to dequeue multiple I/O completion packets from the IoCompletionPort simultaneously.
+	///
+	/// Returns the number of CompletionStatus objects dequeued.
+	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> Result<uint, String> {
+		let allocation = unsafe { heap::allocate(buf.len() * mem::size_of::<ffi::OVERLAPPED_ENTRY>(), mem::align_of::<ffi::OVERLAPPED_ENTRY>()) };
+		
+		let ptr: *mut ffi::OVERLAPPED_ENTRY = unsafe { mem::transmute(allocation) };
+		let mut removed = 0;
+		
+		let queued = unsafe { ffi::GetQueuedCompletionStatusEx(self.inner, ptr, buf.len() as ffi::DWORD, &mut removed, timeout, 0) };
+		
+		if queued == 0 { 
+			return Err(os::last_os_error());
+		}
+		
+		let entries = unsafe { slice::from_raw_mut_buf(&ptr, buf.len()) };
+		
+		for ((status, entry), _) in buf.iter_mut().zip(entries.iter()).zip(range(0, removed)) {
+			*status = CompletionStatus {
+				byte_count: entry.dwNumberOfBytesTransferred as uint,
+				completion_key: entry.lpCompletionKey as uint,
+				overlapped: entry.lpOverlapped
+			};
+		}
+		
+		Ok(removed as uint)
+	}
 	/// Posts an I/O completion packet to the IoCompletionPort.
+	///
+	/// Note that the OVERLAPPED structure in the CompletionStatus does not have to be valid (it can be a null pointer).
+	/// Ensure that if you intend to post an OVERLAPPED structure, it is not freed until the CompletionStatus is dequeued.
 	pub fn post_queued(&self, packet: CompletionStatus) -> Result<(), String> {
 		let posted = unsafe {
 			ffi::PostQueuedCompletionStatus(
 				self.inner,
 				packet.byte_count as libc::DWORD,
 				packet.completion_key as ffi::ULONG_PTR,
-				match packet.overlapped {
-					Some(mut overlapped) => &mut overlapped,
-					None => ptr::null_mut(),
-				}
+				packet.overlapped
 			)
 		};
 		
@@ -105,12 +127,22 @@ impl Drop for IoCompletionPort {
 }
 
 /// Represents an I/O completion status packet
-#[deriving(Copy)]
-pub struct CompletionStatus {
+pub struct CompletionStatus<'a> {
 	/// The number of bytes transferred during the operation
 	pub byte_count: uint,
 	/// The completion key associated with this packet
 	pub completion_key: uint,
-	/// The overlapped structure
-	pub overlapped: Option<libc::OVERLAPPED>
+	/// A pointer to the overlapped structure which may or may not be valid
+	pub overlapped: *mut libc::OVERLAPPED
+}
+
+impl<'a> CompletionStatus<'a> {
+	/// Creates a new CompletionStatus
+	pub fn new() -> CompletionStatus<'a> {
+		CompletionStatus {
+			byte_count: 0,
+			completion_key: 0,
+			overlapped: ptr::null_mut()
+		}
+	}
 }
