@@ -10,6 +10,6 @@ repository = "https://github.com/cyderize/rust-iocp.git"
 
 readme = "README.md"
 
-keywords = ["iocp", "async", "asynchronous", "input", "output", "control", "port"]
+keywords = ["iocp", "input", "output", "completion", "port"]
 
 license = "MIT"
