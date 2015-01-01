@@ -127,7 +127,7 @@ impl Drop for IoCompletionPort {
 }
 
 /// Represents an I/O completion status packet
-pub struct CompletionStatus<'a> {
+pub struct CompletionStatus {
 	/// The number of bytes transferred during the operation
 	pub byte_count: uint,
 	/// The completion key associated with this packet
@@ -136,9 +136,9 @@ pub struct CompletionStatus<'a> {
 	pub overlapped: *mut libc::OVERLAPPED
 }
 
-impl<'a> CompletionStatus<'a> {
+impl CompletionStatus {
 	/// Creates a new CompletionStatus
-	pub fn new() -> CompletionStatus<'a> {
+	pub fn new() -> CompletionStatus {
 		CompletionStatus {
 			byte_count: 0,
 			completion_key: 0,
@@ -146,3 +146,5 @@ impl<'a> CompletionStatus<'a> {
 		}
 	}
 }
+
+impl Copy for CompletionStatus { }
