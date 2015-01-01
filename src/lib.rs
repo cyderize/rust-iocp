@@ -1,8 +1,8 @@
 //! Provides an I/O completion port for asynchronous operations.
 //!
-//! This crate is only available on Windows.
+//! This crate is only available on Windows. See the example in ```examples/main.rs```.
 //!
-#![cfg(target_os = "windows")]
+#![cfg(windows)]
 
 extern crate libc;
 
@@ -33,7 +33,7 @@ impl<'a> IoCompletionPort {
 	pub fn new(concurrent_threads: uint) -> Result<Arc<IoCompletionPort>, String> {
 		let handle = unsafe { ffi::CreateIoCompletionPort(libc::INVALID_HANDLE_VALUE, ptr::null_mut(), 0, concurrent_threads as libc::DWORD) };
 		
-		if handle == ptr::null_mut() {
+		if handle.is_null() {
 			return Err(os::last_os_error());
 		}
 		

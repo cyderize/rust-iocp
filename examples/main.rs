@@ -22,6 +22,8 @@ fn main() {
 				sleep(Duration::milliseconds(100 * i as i64));
 				let status = iocp_clone.get_queued(libc::INFINITE).unwrap();
 				println!("Dequeued: {} from {} with {} {}", status.completion_key, i, status.byte_count, status.overlapped);
+				
+				// We re-box all this stuff so it gets freed
 				let overlapped: Box<libc::OVERLAPPED> = unsafe { mem::transmute(status.overlapped) };
 				let internal: Box<u32> = unsafe { mem::transmute(overlapped.Internal) };
 				let internal_high: Box<u32> = unsafe { mem::transmute(overlapped.InternalHigh) };
@@ -36,6 +38,7 @@ fn main() {
 	loop {
 		let internal = box 3u32;
 		let internal_high = box 4u32;
+		// Transmute the boxes so they're on the heap but don't disappear
 		let overlapped = box libc::OVERLAPPED {
 			Internal: unsafe { mem::transmute(internal) },
 			InternalHigh: unsafe { mem::transmute(internal_high) },
