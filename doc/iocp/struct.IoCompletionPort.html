@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `IoCompletionPort` struct in crate `iocp`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, IoCompletionPort">
+
+    <title>iocp::IoCompletionPort - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='index.html'>iocp</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CompletionStatus.html'>CompletionStatus</a><a class='struct current' href='struct.IoCompletionPort.html'>IoCompletionPort</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>iocp</a>::<wbr><a class='struct' href=''>IoCompletionPort</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-153' href='../src/iocp/lib.rs.html#18-20'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct IoCompletionPort {
+    // some fields omitted
+}</pre><div class='docblock'><p>Represents an I/O completion port.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a&gt; <a class='struct' href='../iocp/struct.IoCompletionPort.html' title='iocp::IoCompletionPort'>IoCompletionPort</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.new' class='fnname'>new</a>(concurrent_threads: <a href='http://doc.rust-lang.org/nightly/std/primitive.uint.html'>uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='http://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html' title='alloc::arc::Arc'>Arc</a>&lt;<a class='struct' href='../iocp/struct.IoCompletionPort.html' title='iocp::IoCompletionPort'>IoCompletionPort</a>&gt;, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Create a new IoCompletionPort with the specified number of concurrent threads.</p>
+
+<p>If zero threads are specified, the system allows as many concurrently running
+threads as there are processors in the system.</p>
+
+<p>Returns an Arc containing the IoCompletionPort, allowing the port to be shared
+between threads.</p>
+</div><h4 id='method.associate' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.associate' class='fnname'>associate</a>(&amp;self, handle: <a class='type' href='../libc/types/os/arch/extra/type.HANDLE.html' title='libc::types::os::arch::extra::HANDLE'>HANDLE</a>, completion_key: <a href='http://doc.rust-lang.org/nightly/std/primitive.uint.html'>uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Assoicates the given file handle with this IoCompletionPort.</p>
+
+<p>The completion key is included in every I/O completion packet for the specified file handle.</p>
+</div><h4 id='method.get_queued' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get_queued' class='fnname'>get_queued</a>(&amp;self, timeout: <a href='http://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../iocp/struct.CompletionStatus.html' title='iocp::CompletionStatus'>CompletionStatus</a>, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Attempts to dequeue an I/O completion packet from the IoCompletionPort.</p>
+</div><h4 id='method.get_many_queued' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get_many_queued' class='fnname'>get_many_queued</a>(&amp;self, buf: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a class='struct' href='../iocp/struct.CompletionStatus.html' title='iocp::CompletionStatus'>CompletionStatus</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, timeout: <a href='http://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.uint.html'>uint</a>, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Attempts to dequeue multiple I/O completion packets from the IoCompletionPort simultaneously.</p>
+
+<p>Returns the number of CompletionStatus objects dequeued.</p>
+</div><h4 id='method.post_queued' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.post_queued' class='fnname'>post_queued</a>(&amp;self, packet: <a class='struct' href='../iocp/struct.CompletionStatus.html' title='iocp::CompletionStatus'>CompletionStatus</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Posts an I/O completion packet to the IoCompletionPort.</p>
+
+<p>Note that the OVERLAPPED structure in the CompletionStatus does not have to be valid (it can be a null pointer).
+Ensure that if you intend to post an OVERLAPPED structure, it is not freed until the CompletionStatus is dequeued.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Experimental' title='Experimental'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/kinds/trait.Sync.html' title='core::kinds::Sync'>Sync</a> for <a class='struct' href='../iocp/struct.IoCompletionPort.html' title='iocp::IoCompletionPort'>IoCompletionPort</a></code></h3><div class='impl-items'></div><h3 class='impl'><a class='stability Experimental' title='Experimental'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/kinds/trait.Send.html' title='core::kinds::Send'>Send</a> for <a class='struct' href='../iocp/struct.IoCompletionPort.html' title='iocp::IoCompletionPort'>IoCompletionPort</a></code></h3><div class='impl-items'></div><h3 class='impl'><a class='stability Experimental' title='Experimental'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../iocp/struct.IoCompletionPort.html' title='iocp::IoCompletionPort'>IoCompletionPort</a></code></h3><div class='impl-items'><h4 id='method.drop' class='method'><a class='stability Experimental' title='Experimental'></a><code>fn <a href='#method.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "iocp";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>
