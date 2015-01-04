@@ -88,7 +88,7 @@ impl<'a> IoCompletionPort {
 		
 		let entries = unsafe { slice::from_raw_mut_buf(&ptr, buf.len()) };
 		
-		for ((status, entry), _) in buf.iter_mut().zip(entries.iter()).zip(range(0, removed)) {
+		for (status, entry) in buf.iter_mut().zip(entries.iter()).take(removed as uint) {
 			*status = CompletionStatus {
 				byte_count: entry.dwNumberOfBytesTransferred as uint,
 				completion_key: entry.lpCompletionKey as uint,
