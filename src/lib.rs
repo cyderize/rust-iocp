@@ -3,6 +3,7 @@
 //! This crate is only available on Windows. See the example in ```examples/main.rs```.
 //!
 #![cfg(windows)]
+#![allow(unstable)]
 
 extern crate libc;
 
@@ -36,7 +37,7 @@ impl IoCompletionPort {
 	///
 	/// If zero threads are specified, the system allows as many concurrently running
 	/// threads as there are processors in the system.
-	pub fn new(concurrent_threads: uint) -> IocpResult<IoCompletionPort> {
+	pub fn new(concurrent_threads: usize) -> IocpResult<IoCompletionPort> {
 		Ok(IoCompletionPort {
 			inner: Arc::new(try!(IocpImp::new(concurrent_threads)))
 		})
@@ -44,7 +45,7 @@ impl IoCompletionPort {
 	/// Assoicates the given file handle with this IoCompletionPort.
 	///
 	/// The completion key is included in every I/O completion packet for the specified file handle.
-	pub fn associate(&self, handle: libc::HANDLE, completion_key: uint) -> IocpResult<()> {
+	pub fn associate(&self, handle: libc::HANDLE, completion_key: usize) -> IocpResult<()> {
 		self.inner.associate(handle, completion_key)
 	}
 	/// Attempts to dequeue an I/O completion packet from the IoCompletionPort.
@@ -54,7 +55,7 @@ impl IoCompletionPort {
 	/// Attempts to dequeue multiple I/O completion packets from the IoCompletionPort simultaneously.
 	///
 	/// Returns the number of CompletionStatus objects dequeued.
-	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> IocpResult<uint> {
+	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> IocpResult<usize> {
 		self.inner.get_many_queued(buf, timeout)
 	}
 	/// Posts an I/O completion packet to the IoCompletionPort.
@@ -69,9 +70,9 @@ impl IoCompletionPort {
 /// Represents an I/O completion status packet
 pub struct CompletionStatus {
 	/// The number of bytes transferred during the operation
-	pub byte_count: uint,
+	pub byte_count: usize,
 	/// The completion key associated with this packet
-	pub completion_key: uint,
+	pub completion_key: usize,
 	/// A pointer to the overlapped structure which may or may not be valid
 	pub overlapped: *mut libc::OVERLAPPED
 }
@@ -94,7 +95,7 @@ struct IocpImp {
 }
 
 impl IocpImp {
-	pub fn new(concurrent_threads: uint) -> IocpResult<IocpImp> {
+	pub fn new(concurrent_threads: usize) -> IocpResult<IocpImp> {
 		let handle = unsafe { ffi::CreateIoCompletionPort(libc::INVALID_HANDLE_VALUE, ptr::null_mut(), 0, concurrent_threads as libc::DWORD) };
 		
 		if handle.is_null() {
@@ -107,7 +108,7 @@ impl IocpImp {
 			inner: handle
 		})
 	}
-	pub fn associate(&self, handle: libc::HANDLE, completion_key: uint) -> IocpResult<()> {
+	pub fn associate(&self, handle: libc::HANDLE, completion_key: usize) -> IocpResult<()> {
 		let handle = unsafe { ffi::CreateIoCompletionPort(handle, self.inner, completion_key as ffi::ULONG_PTR, 0) };
 		
 		if handle.is_null() {
@@ -132,12 +133,12 @@ impl IocpImp {
 		}
 		
 		Ok(CompletionStatus {
-			byte_count: length as uint,
-			completion_key: key as uint,
+			byte_count: length as usize,
+			completion_key: key as usize,
 			overlapped: overlapped
 		})
 	}
-	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> IocpResult<uint> {
+	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> IocpResult<usize> {
 		let allocation = unsafe { heap::allocate(buf.len() * mem::size_of::<ffi::OVERLAPPED_ENTRY>(), mem::align_of::<ffi::OVERLAPPED_ENTRY>()) };
 		
 		let ptr: *mut ffi::OVERLAPPED_ENTRY = unsafe { mem::transmute(allocation) };
@@ -153,15 +154,15 @@ impl IocpImp {
 		
 		let entries = unsafe { slice::from_raw_mut_buf(&ptr, buf.len()) };
 		
-		for (status, entry) in buf.iter_mut().zip(entries.iter()).take(removed as uint) {
+		for (status, entry) in buf.iter_mut().zip(entries.iter()).take(removed as usize) {
 			*status = CompletionStatus {
-				byte_count: entry.dwNumberOfBytesTransferred as uint,
-				completion_key: entry.lpCompletionKey as uint,
+				byte_count: entry.dwNumberOfBytesTransferred as usize,
+				completion_key: entry.lpCompletionKey as usize,
 				overlapped: entry.lpOverlapped
 			};
 		}
 		
-		Ok(removed as uint)
+		Ok(removed as usize)
 	}
 	pub fn post_queued(&self, packet: CompletionStatus) -> IocpResult<()> {
 		let posted = unsafe {
@@ -191,7 +192,7 @@ impl Drop for IocpImp {
 
 pub type IocpResult<T> = Result<T, IocpError>;
 
-#[allow(raw_pointer_deriving)]
+#[allow(raw_pointer_derive)]
 #[derive(Show)]
 pub enum IocpError {
 	GetQueuedError(String, *mut libc::OVERLAPPED),

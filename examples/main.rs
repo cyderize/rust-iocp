@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+#![allow(unstable)]
 extern crate iocp;
 extern crate libc;
 
@@ -21,14 +23,14 @@ fn main() {
 			loop {
 				sleep(Duration::milliseconds(100 * i as i64));
 				let status = iocp_clone.get_queued(libc::INFINITE).unwrap();
-				println!("Dequeued: {} from {} with {} {}", status.completion_key, i, status.byte_count, status.overlapped);
+				println!("Dequeued: {} from {} with {} {:p}", status.completion_key, i, status.byte_count, status.overlapped);
 				
 				// We re-box all this stuff so it gets freed
 				let overlapped: Box<libc::OVERLAPPED> = unsafe { mem::transmute(status.overlapped) };
 				let internal: Box<u32> = unsafe { mem::transmute(overlapped.Internal) };
 				let internal_high: Box<u32> = unsafe { mem::transmute(overlapped.InternalHigh) };
 				
-				println!("Overlapped: {} {} {} {} {}", internal, internal_high, overlapped.Offset, overlapped.OffsetHigh, overlapped.hEvent);
+				println!("Overlapped: {} {} {} {} {:p}", internal, internal_high, overlapped.Offset, overlapped.OffsetHigh, overlapped.hEvent);
 				
 				sleep(Duration::milliseconds(500));
 			}

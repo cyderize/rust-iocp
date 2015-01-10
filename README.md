@@ -20,7 +20,7 @@ From crates.io:
 ```INI
 [dependencies]
 
-iocp = "0.0.3"
+iocp = "0.0.4"
 ```
 
 And add ```extern crate iocp;``` to your project.
