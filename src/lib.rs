@@ -5,7 +5,8 @@
 #![cfg(windows)]
 #![allow(unstable)]
 
-extern crate libc;
+extern crate "kernel32-sys" as kernel32;
+extern crate winapi;
 
 use std::{os, ptr, mem};
 use std::result::Result;
@@ -13,8 +14,6 @@ use std::error::Error;
 use std::sync::Arc;
 use std::rt::heap;
 use std::slice;
-
-mod ffi;
 
 /// Represents an I/O completion port.
 pub struct IoCompletionPort {
@@ -45,7 +44,7 @@ impl IoCompletionPort {
 	/// Assoicates the given file handle with this IoCompletionPort.
 	///
 	/// The completion key is included in every I/O completion packet for the specified file handle.
-	pub fn associate(&self, handle: libc::HANDLE, completion_key: usize) -> IocpResult<()> {
+	pub fn associate(&self, handle: winapi::HANDLE, completion_key: usize) -> IocpResult<()> {
 		self.inner.associate(handle, completion_key)
 	}
 	/// Attempts to dequeue an I/O completion packet from the IoCompletionPort.
@@ -74,7 +73,7 @@ pub struct CompletionStatus {
 	/// The completion key associated with this packet
 	pub completion_key: usize,
 	/// A pointer to the overlapped structure which may or may not be valid
-	pub overlapped: *mut libc::OVERLAPPED
+	pub overlapped: *mut winapi::OVERLAPPED
 }
 
 impl CompletionStatus {
@@ -91,12 +90,12 @@ impl CompletionStatus {
 impl Copy for CompletionStatus { }
 
 struct IocpImp {
-	inner: libc::HANDLE
+	inner: winapi::HANDLE
 }
 
 impl IocpImp {
 	pub fn new(concurrent_threads: usize) -> IocpResult<IocpImp> {
-		let handle = unsafe { ffi::CreateIoCompletionPort(libc::INVALID_HANDLE_VALUE, ptr::null_mut(), 0, concurrent_threads as libc::DWORD) };
+		let handle = unsafe { kernel32::CreateIoCompletionPort(winapi::INVALID_HANDLE_VALUE, ptr::null_mut(), 0, concurrent_threads as winapi::DWORD) };
 		
 		if handle.is_null() {
 			return Err(
@@ -108,8 +107,8 @@ impl IocpImp {
 			inner: handle
 		})
 	}
-	pub fn associate(&self, handle: libc::HANDLE, completion_key: usize) -> IocpResult<()> {
-		let handle = unsafe { ffi::CreateIoCompletionPort(handle, self.inner, completion_key as ffi::ULONG_PTR, 0) };
+	pub fn associate(&self, handle: winapi::HANDLE, completion_key: usize) -> IocpResult<()> {
+		let handle = unsafe { kernel32::CreateIoCompletionPort(handle, self.inner, completion_key as winapi::ULONG_PTR, 0) };
 		
 		if handle.is_null() {
 			return Err(
@@ -120,11 +119,11 @@ impl IocpImp {
 		Ok(())
 	}
 	pub fn get_queued(&self, timeout: u32) -> IocpResult<CompletionStatus> {
-		let mut length: ffi::DWORD = 0;
-		let mut key: ffi::ULONG_PTR = 0;
+		let mut length: winapi::DWORD = 0;
+		let mut key: winapi::ULONG_PTR = 0;
 		let mut overlapped = ptr::null_mut();
 
-		let queued = unsafe { ffi::GetQueuedCompletionStatus(self.inner, &mut length, &mut key, &mut overlapped, timeout) };
+		let queued = unsafe { kernel32::GetQueuedCompletionStatus(self.inner, &mut length, &mut key, &mut overlapped, timeout) };
 		
 		if queued == 0 {
 			return Err(
@@ -139,12 +138,12 @@ impl IocpImp {
 		})
 	}
 	pub fn get_many_queued(&self, buf: &mut [CompletionStatus], timeout: u32) -> IocpResult<usize> {
-		let allocation = unsafe { heap::allocate(buf.len() * mem::size_of::<ffi::OVERLAPPED_ENTRY>(), mem::align_of::<ffi::OVERLAPPED_ENTRY>()) };
+		let allocation = unsafe { heap::allocate(buf.len() * mem::size_of::<winapi::OVERLAPPED_ENTRY>(), mem::align_of::<winapi::OVERLAPPED_ENTRY>()) };
 		
-		let ptr: *mut ffi::OVERLAPPED_ENTRY = unsafe { mem::transmute(allocation) };
+		let ptr: *mut winapi::OVERLAPPED_ENTRY = unsafe { mem::transmute(allocation) };
 		let mut removed = 0;
 		
-		let queued = unsafe { ffi::GetQueuedCompletionStatusEx(self.inner, ptr, buf.len() as ffi::DWORD, &mut removed, timeout, 0) };
+		let queued = unsafe { kernel32::GetQueuedCompletionStatusEx(self.inner, ptr, buf.len() as winapi::DWORD, &mut removed, timeout, 0) };
 		
 		if queued == 0 {
 			return Err(
@@ -166,10 +165,10 @@ impl IocpImp {
 	}
 	pub fn post_queued(&self, packet: CompletionStatus) -> IocpResult<()> {
 		let posted = unsafe {
-			ffi::PostQueuedCompletionStatus(
+			kernel32::PostQueuedCompletionStatus(
 				self.inner,
-				packet.byte_count as libc::DWORD,
-				packet.completion_key as ffi::ULONG_PTR,
+				packet.byte_count as winapi::DWORD,
+				packet.completion_key as winapi::ULONG_PTR,
 				packet.overlapped
 			)
 		};
@@ -186,7 +185,7 @@ impl IocpImp {
 
 impl Drop for IocpImp {
 	fn drop(&mut self) {
-		unsafe { let _ = libc::CloseHandle(self.inner); }
+		unsafe { let _ = kernel32::CloseHandle(self.inner); }
 	}
 }
 
@@ -195,7 +194,7 @@ pub type IocpResult<T> = Result<T, IocpError>;
 #[allow(raw_pointer_derive)]
 #[derive(Show)]
 pub enum IocpError {
-	GetQueuedError(String, *mut libc::OVERLAPPED),
+	GetQueuedError(String, *mut winapi::OVERLAPPED),
 	HostError(String)
 }
 
