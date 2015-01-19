@@ -13,3 +13,7 @@ readme = "README.md"
 keywords = ["iocp", "input", "output", "completion", "port"]
 
 license = "MIT"
+
+[dependencies]
+kernel32-sys = "*"
+winapi = "*"
