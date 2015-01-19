@@ -15,6 +15,9 @@ use std::sync::Arc;
 use std::rt::heap;
 use std::slice;
 
+pub use winapi::HANDLE;
+pub use winapi::OVERLAPPED;
+
 /// Represents an I/O completion port.
 pub struct IoCompletionPort {
 	inner: Arc<IocpImp>
