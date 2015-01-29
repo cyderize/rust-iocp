@@ -14,6 +14,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::rt::heap;
 use std::slice;
+use std::fmt;
 
 pub use winapi::HANDLE;
 pub use winapi::OVERLAPPED;
@@ -195,10 +196,19 @@ impl Drop for IocpImp {
 pub type IocpResult<T> = Result<T, IocpError>;
 
 #[allow(raw_pointer_derive)]
-#[derive(Show)]
+#[derive(Debug)]
 pub enum IocpError {
 	GetQueuedError(String, *mut winapi::OVERLAPPED),
 	HostError(String)
+}
+
+impl fmt::Display for IocpError {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match *self {
+			IocpError::GetQueuedError(ref string, _) => write!(f, "{}", string),
+			IocpError::HostError(ref string) => write!(f, "{}", string),
+		}
+	}
 }
 
 unsafe impl Send for IocpError { }

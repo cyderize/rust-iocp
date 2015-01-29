@@ -7,7 +7,7 @@ use iocp::{IoCompletionPort, CompletionStatus};
 use std::{ptr, mem};
 use std::sync::TaskPool;
 use std::os::num_cpus;
-use std::io::timer::sleep;
+use std::old_io::timer::sleep;
 use std::time::duration::Duration;
 use std::rand::random;
 
