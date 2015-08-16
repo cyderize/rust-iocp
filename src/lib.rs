@@ -4,8 +4,9 @@
 //!
 #![cfg(windows)]
 #![allow(unstable)]
+#![feature(heap_api)]
 
-extern crate "kernel32-sys" as kernel32;
+extern crate kernel32;
 extern crate winapi;
 
 use std::{os, ptr, mem};
@@ -15,6 +16,10 @@ use std::sync::Arc;
 use std::rt::heap;
 use std::slice;
 use std::fmt;
+
+use std::io::Error as IOError;
+
+
 
 pub use winapi::HANDLE;
 pub use winapi::OVERLAPPED;
@@ -91,7 +96,8 @@ impl CompletionStatus {
 	}
 }
 
-impl Copy for CompletionStatus { }
+//impl Clone for CompletionStatus { }
+//impl Copy for CompletionStatus { }
 
 struct IocpImp {
 	inner: winapi::HANDLE
@@ -103,7 +109,7 @@ impl IocpImp {
 		
 		if handle.is_null() {
 			return Err(
-				IocpError::HostError(os::last_os_error())
+				IocpError::HostError(IOError::last_os_error())
 			);
 		}
 		
@@ -116,7 +122,7 @@ impl IocpImp {
 		
 		if handle.is_null() {
 			return Err(
-				IocpError::HostError(os::last_os_error())
+				IocpError::HostError(IOError::last_os_error())
 			);
 		}
 		
@@ -131,7 +137,7 @@ impl IocpImp {
 		
 		if queued == 0 {
 			return Err(
-				IocpError::GetQueuedError(os::last_os_error(), overlapped)
+				IocpError::GetQueuedError(IOError::last_os_error(), overlapped)
 			);
 		}
 		
@@ -151,11 +157,11 @@ impl IocpImp {
 		
 		if queued == 0 {
 			return Err(
-				IocpError::HostError(os::last_os_error())
+				IocpError::HostError(IOError::last_os_error())
 			);
 		}
 		
-		let entries = unsafe { slice::from_raw_mut_buf(&ptr, buf.len()) };
+		let entries = unsafe { slice::from_raw_parts(ptr, buf.len()) };
 		
 		for (status, entry) in buf.iter_mut().zip(entries.iter()).take(removed as usize) {
 			*status = CompletionStatus {
@@ -179,7 +185,7 @@ impl IocpImp {
 		
 		if posted == 0 {
 			return Err(
-				IocpError::HostError(os::last_os_error())
+				IocpError::HostError(IOError::last_os_error())
 			);
 		}
 		
@@ -198,8 +204,8 @@ pub type IocpResult<T> = Result<T, IocpError>;
 #[allow(raw_pointer_derive)]
 #[derive(Debug)]
 pub enum IocpError {
-	GetQueuedError(String, *mut winapi::OVERLAPPED),
-	HostError(String)
+	GetQueuedError(IOError, *mut winapi::OVERLAPPED),
+	HostError(IOError)
 }
 
 impl fmt::Display for IocpError {
