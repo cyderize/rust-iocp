@@ -1,27 +1,26 @@
 #![feature(box_syntax)]
-#![allow(unstable)]
+#![feature(libc)]
 extern crate iocp;
 extern crate libc;
+extern crate num_cpus;
+extern crate threadpool;
+extern crate rand;
 
 use iocp::{IoCompletionPort, CompletionStatus};
-use std::{ptr, mem};
-use std::sync::TaskPool;
-use std::os::num_cpus;
-use std::old_io::timer::sleep;
-use std::time::duration::Duration;
-use std::rand::random;
+use std::{ptr, mem, thread};
+use threadpool::ThreadPool;
 
 fn main() {
 	let iocp = IoCompletionPort::new(0).unwrap();
 	
-	let threads = num_cpus() * 2;
-	let taskpool = TaskPool::new(threads);
+	let threads = num_cpus::get() * 2;
+	let taskpool = ThreadPool::new(threads);
 	
-	for i in range(0, threads) {
+	for i in 0..threads {
 		let iocp_clone = iocp.clone();
 		taskpool.execute(move || {
 			loop {
-				sleep(Duration::milliseconds(100 * i as i64));
+				thread::sleep_ms(100 * i as u32);
 				let status = iocp_clone.get_queued(libc::INFINITE).unwrap();
 				println!("Dequeued: {} from {} with {} {:p}", status.completion_key, i, status.byte_count, status.overlapped);
 				
@@ -32,7 +31,7 @@ fn main() {
 				
 				println!("Overlapped: {} {} {} {} {:p}", internal, internal_high, overlapped.Offset, overlapped.OffsetHigh, overlapped.hEvent);
 				
-				sleep(Duration::milliseconds(500));
+				thread::sleep_ms(500);
 			}
 		});
 	}
@@ -50,11 +49,11 @@ fn main() {
 		};
 		let status = CompletionStatus {
 			byte_count: 100,
-			completion_key: random(),
+			completion_key: rand::random(),
 			overlapped: unsafe { mem::transmute(overlapped) }
 		};
 		println!("Queued: {}", status.completion_key);
 		iocp.post_queued(status).unwrap();
-		sleep(Duration::milliseconds(100));
+		thread::sleep_ms(100);
 	}
 }

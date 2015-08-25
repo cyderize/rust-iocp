@@ -17,3 +17,12 @@ license = "MIT"
 [dependencies]
 kernel32-sys = "*"
 winapi = "*"
+
+[[example]]
+name = "example"
+path = "examples/main.rs"
+
+[dev_dependencies]
+num_cpus = "*"
+threadpool = "*"
+rand = "*"
